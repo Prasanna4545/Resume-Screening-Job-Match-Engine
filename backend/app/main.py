@@ -6,7 +6,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.database import engine, Base, get_db
 from app.api import jobs_router, resumes_router, matching_router
-from app.services.embedding_service import get_embedding_model
+from app.services.embedding_service import get_embedding_session
 from app.services.resume_parser import get_nlp
 import app.models  # Ensure models are imported for table creation
 
@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
     # Pre-load ML and NLP models once at application startup
     try:
         get_nlp()
-        get_embedding_model()
+        get_embedding_session()
     except Exception as e:
         print(f"Warning during startup model pre-loading: {e}")
     yield
