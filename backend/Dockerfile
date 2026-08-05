@@ -4,7 +4,7 @@ FROM python:3.11-slim AS exporter
 WORKDIR /export
 
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir optimum optimum-onnx transformers
+RUN pip install --no-cache-dir optimum optimum-onnx onnxruntime transformers
 
 RUN python -c "\
 from optimum.onnxruntime import ORTModelForFeatureExtraction; \
