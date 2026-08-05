@@ -22,25 +22,22 @@ def get_embedding_session():
         if os.path.exists(local_onnx) and os.path.exists(os.path.join(local_onnx, "model.onnx")):
             model_dir = local_onnx
         else:
-            model_dir = "sentence-transformers/all-MiniLM-L6-v2"
+            try:
+                from optimum.onnxruntime import ORTModelForFeatureExtraction
+                model = ORTModelForFeatureExtraction.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", export=True)
+                os.makedirs(local_onnx, exist_ok=True)
+                model.save_pretrained(local_onnx)
+                tok = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+                tok.save_pretrained(local_onnx)
+                model_dir = local_onnx
+            except Exception:
+                model_dir = local_onnx
 
-    if os.path.exists(model_dir) and os.path.exists(os.path.join(model_dir, "model.onnx")):
-        tokenizer = AutoTokenizer.from_pretrained(model_dir)
-        session = ort.InferenceSession(
-            os.path.join(model_dir, "model.onnx"),
-            providers=["CPUExecutionProvider"],
-        )
-    else:
-        tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
-        try:
-            from optimum.onnxruntime import ORTModelForFeatureExtraction
-            optimum_model = ORTModelForFeatureExtraction.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", export=True)
-            session = optimum_model.model
-        except Exception:
-            session = ort.InferenceSession(
-                os.path.join(model_dir, "model.onnx"),
-                providers=["CPUExecutionProvider"],
-            )
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    session = ort.InferenceSession(
+        os.path.join(model_dir, "model.onnx"),
+        providers=["CPUExecutionProvider"],
+    )
 
     return tokenizer, session
 
