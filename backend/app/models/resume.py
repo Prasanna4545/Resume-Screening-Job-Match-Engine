@@ -15,6 +15,6 @@ class Resume(Base):
     parsed_experience_years: Mapped[float] = mapped_column(Float, default=0.0)
     parsed_education: Mapped[list] = mapped_column(JSON, default=list)
     file_path: Mapped[str] = mapped_column(String(512), nullable=True)
-    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     match_results = relationship("MatchResult", back_populates="resume", cascade="all, delete-orphan")

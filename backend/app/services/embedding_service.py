@@ -1,7 +1,6 @@
 import numpy as np
 from typing import List
 from functools import lru_cache
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from app.config import get_settings
 
@@ -9,11 +8,12 @@ settings = get_settings()
 
 
 @lru_cache(maxsize=1)
-def get_embedding_model() -> SentenceTransformer:
+def get_embedding_model():
     """
     Loads and caches sentence-transformers model in memory.
     Default model: all-MiniLM-L6-v2 (can be swapped via EMBEDDING_MODEL_NAME setting).
     """
+    from sentence_transformers import SentenceTransformer
     model_name = settings.EMBEDDING_MODEL_NAME or "all-MiniLM-L6-v2"
     return SentenceTransformer(model_name)
 
@@ -25,7 +25,13 @@ class EmbeddingService:
     """
 
     def __init__(self):
-        self.model = get_embedding_model()
+        self._model = None
+
+    @property
+    def model(self) -> SentenceTransformer:
+        if self._model is None:
+            self._model = get_embedding_model()
+        return self._model
 
     def generate_embedding(self, text: str) -> np.ndarray:
         """Generate 384-dimensional vector embedding for text string."""

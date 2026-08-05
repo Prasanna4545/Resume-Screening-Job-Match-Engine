@@ -12,6 +12,6 @@ class Job(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     required_skills: Mapped[list] = mapped_column(JSON, default=list)
     min_experience_years: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     match_results = relationship("MatchResult", back_populates="job", cascade="all, delete-orphan")

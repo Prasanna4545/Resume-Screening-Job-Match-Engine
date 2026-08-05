@@ -3,15 +3,26 @@ import io
 from typing import Dict, List, Any, Optional
 import pdfplumber
 import docx
-import spacy
 
-# Load spaCy small English pipeline
-try:
-    nlp = spacy.load("en_core_web_sm")
-except Exception:
-    import spacy.cli
-    spacy.cli.download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
+# Lazy spaCy loader to handle environments where spaCy model is loading or Cython version mismatch
+_nlp = None
+_spacy_attempted = False
+
+def get_nlp():
+    global _nlp, _spacy_attempted
+    if not _spacy_attempted:
+        _spacy_attempted = True
+        try:
+            import spacy
+            try:
+                _nlp = spacy.load("en_core_web_sm")
+            except Exception:
+                import spacy.cli
+                spacy.cli.download("en_core_web_sm")
+                _nlp = spacy.load("en_core_web_sm")
+        except Exception:
+            _nlp = None
+    return _nlp
 
 
 class ResumeParser:
@@ -86,6 +97,8 @@ class ResumeParser:
         if not lines:
             return "Unknown Candidate"
 
+        nlp = get_nlp()
+
         # Examine top 3 lines for candidate header
         for i, line in enumerate(lines[:3]):
             # Skip contact header lines containing email, URL, phone, or section keywords
@@ -94,21 +107,32 @@ class ResumeParser:
 
             words = line.split()
             if 1 <= len(words) <= 4 and all(w[0].isupper() or w.lower() in ['de', 'van', 'der', 'jr', 'sr', 'iii'] for w in words if w.isalpha()):
-                # Confirm with spaCy or top line heuristic
-                doc = nlp(line)
-                person_ents = [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
-                if person_ents:
-                    return person_ents[0].strip()
+                # Confirm with spaCy if available
+                if nlp:
+                    try:
+                        doc = nlp(line)
+                        person_ents = [ent.text for ent in doc.ents if ent.label_ == "PERSON"]
+                        if person_ents:
+                            return person_ents[0].strip()
+                    except Exception:
+                        pass
                 # Top header fallback
                 if i == 0:
                     return line.strip()
 
         # Secondary pass: check top 5 lines for any spaCy PERSON entity
-        top_text = "\n".join(lines[:5])
-        doc = nlp(top_text)
-        for ent in doc.ents:
-            if ent.label_ == "PERSON" and len(ent.text.split()) <= 4:
-                return ent.text.strip()
+        if nlp:
+            try:
+                top_text = "\n".join(lines[:5])
+                doc = nlp(top_text)
+                for ent in doc.ents:
+                    if ent.label_ == "PERSON" and len(ent.text.split()) <= 4:
+                        return ent.text.strip()
+            except Exception:
+                pass
+
+        if lines:
+            return lines[0].strip()
 
         return "Unknown Candidate"
 

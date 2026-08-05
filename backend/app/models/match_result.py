@@ -19,7 +19,7 @@ class MatchResult(Base):
     matched_skills: Mapped[list] = mapped_column(JSON, default=list)
     missing_skills: Mapped[list] = mapped_column(JSON, default=list)
     explanation: Mapped[str] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     job = relationship("Job", back_populates="match_results")
     resume = relationship("Resume", back_populates="match_results")
