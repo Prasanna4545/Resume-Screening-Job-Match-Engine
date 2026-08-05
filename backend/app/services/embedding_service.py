@@ -14,11 +14,34 @@ ONNX_MODEL_DIR = os.environ.get("ONNX_MODEL_DIR", "/app/onnx_model")
 @lru_cache(maxsize=1)
 def get_embedding_session():
     """Load and cache the ONNX Runtime session + tokenizer (no torch dependency)."""
-    tokenizer = AutoTokenizer.from_pretrained(ONNX_MODEL_DIR)
-    session = ort.InferenceSession(
-        os.path.join(ONNX_MODEL_DIR, "model.onnx"),
-        providers=["CPUExecutionProvider"],
-    )
+    model_dir = ONNX_MODEL_DIR
+
+    # If ONNX_MODEL_DIR path does not exist on filesystem (e.g. running pytest outside Docker)
+    if not os.path.exists(model_dir) or not os.path.exists(os.path.join(model_dir, "model.onnx")):
+        local_onnx = os.path.join(os.path.dirname(__file__), "..", "..", "onnx_model")
+        if os.path.exists(local_onnx) and os.path.exists(os.path.join(local_onnx, "model.onnx")):
+            model_dir = local_onnx
+        else:
+            model_dir = "sentence-transformers/all-MiniLM-L6-v2"
+
+    if os.path.exists(model_dir) and os.path.exists(os.path.join(model_dir, "model.onnx")):
+        tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        session = ort.InferenceSession(
+            os.path.join(model_dir, "model.onnx"),
+            providers=["CPUExecutionProvider"],
+        )
+    else:
+        tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+        try:
+            from optimum.onnxruntime import ORTModelForFeatureExtraction
+            optimum_model = ORTModelForFeatureExtraction.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", export=True)
+            session = optimum_model.model
+        except Exception:
+            session = ort.InferenceSession(
+                os.path.join(model_dir, "model.onnx"),
+                providers=["CPUExecutionProvider"],
+            )
+
     return tokenizer, session
 
 
