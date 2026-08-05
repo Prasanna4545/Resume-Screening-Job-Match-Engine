@@ -2,6 +2,7 @@ import numpy as np
 from typing import List
 from functools import lru_cache
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
 from app.config import get_settings
 
 settings = get_settings()
