@@ -15,11 +15,11 @@ def get_nlp():
         try:
             import spacy
             try:
-                _nlp = spacy.load("en_core_web_sm")
+                _nlp = spacy.load("en_core_web_sm", disable=["parser", "tagger", "lemmatizer", "attribute_ruler"])
             except Exception:
                 import spacy.cli
                 spacy.cli.download("en_core_web_sm")
-                _nlp = spacy.load("en_core_web_sm")
+                _nlp = spacy.load("en_core_web_sm", disable=["parser", "tagger", "lemmatizer", "attribute_ruler"])
         except Exception:
             _nlp = None
     return _nlp

@@ -7,10 +7,12 @@ from app.models.resume import Resume
 from app.schemas.resume import ResumeResponse
 from app.services.resume_parser import ResumeParser
 from app.services.skill_extractor import SkillExtractor
+from app.services.storage_service import StorageService
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
 parser = ResumeParser()
 skill_extractor = SkillExtractor()
+storage_service = StorageService()
 
 @router.get("", response_model=List[ResumeResponse])
 def list_resumes(db: Session = Depends(get_db)):
@@ -62,6 +64,13 @@ async def upload_resumes(files: List[UploadFile] = File(...), db: Session = Depe
         parsed = parser.parse_resume(raw_text, filename=filename)
         extracted_skills = skill_extractor.extract_skills(raw_text)
 
+        # Upload file bytes directly to Cloudflare R2 (or return storage key)
+        r2_file_key = storage_service.upload_file(
+            content,
+            filename,
+            content_type=file.content_type or "application/octet-stream"
+        )
+
         resume = Resume(
             candidate_name=parsed["candidate_name"],
             email=parsed["email"],
@@ -69,7 +78,7 @@ async def upload_resumes(files: List[UploadFile] = File(...), db: Session = Depe
             parsed_skills=extracted_skills,
             parsed_experience_years=parsed["parsed_experience_years"],
             parsed_education=parsed["parsed_education"],
-            file_path=filename
+            file_path=r2_file_key
         )
         db.add(resume)
         uploaded_resumes.append(resume)

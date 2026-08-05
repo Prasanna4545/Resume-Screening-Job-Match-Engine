@@ -144,7 +144,7 @@ def test_end_to_end_db_persistence():
         assert db_resume.email == "carol.martinez@devstudio.com"
         assert db_resume.parsed_experience_years >= 8.0
         assert len(db_resume.parsed_education) > 0
-        assert db_resume.file_path == "carol_martinez.txt"
+        assert "carol_martinez.txt" in db_resume.file_path
         assert "Staff Platform Engineer" in db_resume.raw_text
     finally:
         db.close()

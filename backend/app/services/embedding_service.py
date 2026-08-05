@@ -10,12 +10,15 @@ settings = get_settings()
 @lru_cache(maxsize=1)
 def get_embedding_model():
     """
-    Loads and caches sentence-transformers model in memory.
+    Loads and caches sentence-transformers model in memory using ONNX backend.
     Default model: all-MiniLM-L6-v2 (can be swapped via EMBEDDING_MODEL_NAME setting).
     """
     from sentence_transformers import SentenceTransformer
     model_name = settings.EMBEDDING_MODEL_NAME or "all-MiniLM-L6-v2"
-    return SentenceTransformer(model_name)
+    try:
+        return SentenceTransformer(model_name, backend='onnx')
+    except Exception:
+        return SentenceTransformer(model_name)
 
 
 class EmbeddingService:
